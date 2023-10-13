@@ -1,0 +1,110 @@
+/*** convert .mp4 to image sequence for mac
+ By default, the target folder is on the Desktop, named 'sorted'
+ The target .mp4 is on the Desktop, named 'clip.mp4'
+ */
+
+/*mp4 to image sequence*/
+import processing.video.*;
+import java.io.File;
+Movie video;
+String exportPath;
+String desktopPath;
+int size;
+boolean videoPlayed;
+PImage[] images;
+PGraphics canvas;
+
+/*image sequence display*/
+int frame;
+boolean setup = false;
+
+void setup() {
+  fill(0);
+  textAlign(CENTER);
+  size(640, 480); // Set the dimensions of your video
+  desktopPath = System.getProperty("user.home") + "/Desktop/";
+  video = new Movie(this, desktopPath + "clip3.mp4"); //input
+  exportPath = desktopPath + "sorted/"; //output
+
+  /*clear 'sorted' if contains items*/
+  String folderPath = "/Users/jinggreen/Desktop/sorted";
+  File folder = new File(folderPath);
+  if (folder.exists() && folder.isDirectory()) {
+    String[] files = folder.list();
+
+    if (files.length > 0) {
+      for (String filename : files) {
+        //println(filename);
+        File fileToDelete = new File(folderPath + "/" + filename);
+        fileToDelete.delete();
+      }
+    }
+  }
+
+  video.play();
+  File exportDir = new File(exportPath);
+  if (!exportDir.exists()) {
+    exportDir.mkdir();
+  }
+}
+
+void draw() {
+  if (video.available()) {
+    video.read();
+    image(video, 0, 0, width, height);
+    saveFrame(exportPath + "frame-######.png"); // Save frames as images in the specified folder
+    videoPlayed=true;
+  }
+  if (videoPlayed) {
+    if (!video.available()) {
+      if (!setup)displaySetup();
+      display();
+    }
+  }
+}
+
+void displaySetup() {
+    frame = 0;
+    canvas = createGraphics(1080, 1080);
+    /*access image sequence in 'sorted', organize in image array*/
+    File folder = new File("/Users/jinggreen/Desktop/sorted");
+    File[] listOfFiles = folder.listFiles();
+    java.util.Arrays.sort(listOfFiles);
+    size = 0;
+    for (File file : listOfFiles) {
+      String fileName = file.getName().toLowerCase();
+      if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg") || fileName.endsWith(".png") || fileName.endsWith(".gif") || fileName.endsWith(".bmp")) {
+        size++;
+      }
+    }
+    images = new PImage[size];
+    int i = 0;
+    for (File file : listOfFiles) {
+      String fileName = file.getName().toLowerCase();
+      if (fileName.endsWith(".jpg") || fileName.endsWith(".jpeg") || fileName.endsWith(".png") || fileName.endsWith(".gif") || fileName.endsWith(".bmp")) {
+        images[i] = loadImage(file.getAbsolutePath());
+        i++;
+      }
+    }
+    println("File size: " + size);
+    println("Array size: " + images.length);
+    setup = true; //all done!
+}
+
+void display() {
+  println(frame);
+  image(images[0], 0, 0);
+  canvas.beginDraw();
+  if (mousePressed) {
+    if (frame >= size) frame = 0;
+    else if (frame < size) {
+      canvas.image(images[frame], 0, 0);
+      frame++;
+    }
+  }
+  canvas.endDraw();
+  image(canvas, 0, 0);
+  if (frame ==0) text("mousepress to progress sequence",width/2,height/2);
+  
+
+}
